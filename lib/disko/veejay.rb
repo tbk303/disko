@@ -15,7 +15,7 @@ module Disko
         end.flatten
       end
       hash = {frames: frames}
-      File.open(Path.join(ENV['DISKO_DIR'], name),"w") do |f|
+      File.open(File.join(ENV['DISKO_DIR'], name),"w") do |f|
         f.write(hash.to_json)
       end
 
@@ -27,6 +27,8 @@ module Disko
      self.class.write_frames(params['name'], 20, params['function'])
      "OK"
     end
+
+    set :bind, '0.0.0.0'
 
     # start the server if ruby file executed directly
     run! if app_file == $0

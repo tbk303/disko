@@ -12,8 +12,12 @@ module Disko
 
       raise "DISKO_DIR does not exist/is not configured" unless (disko_dir && Dir.exists?(disko_dir))
 
+      puts "Using #{disko_dir}"
+
       strip = Ws2812::Basic.new(240, 18)
       strip.open
+
+      puts "Strip initialized"
 
       begin
         strip.brightness = 255
@@ -22,17 +26,23 @@ module Disko
 
           new_file_path = (modified || added).first
 
+          puts "Detected new file #{new_file_path}"
+
           if new_file_path
 
             begin
 
-              rgb_frames = JSON.parse new_file_path
+              rgb_frames = JSON.parse(File.read(new_file_path))["frames"]
 
-              raise "Expecting JSON arrays" unless rgbs.is_a? Array
+              raise "Expecting JSON arrays" unless rgb_frames.is_a? Array
+
+              puts "Loaded #{rgb_frames.length} frames"
 
               ws_frames = rgb_frames.map do |rgb_frame|
                 rgb_frame.each_slice(3).map{|r, g, b| Ws2812::Color.new(r,g,b) }
               end
+
+              puts "Starting playback"
 
               loop do
                 ws_frames.each do |ws_frame|
@@ -47,11 +57,17 @@ module Disko
               end
 
             rescue JSON::ParserError
+              puts "Unable to read #{new_file_path}"
             end
           end
         end
 
+        listener.start
+        sleep
+
       ensure
+        puts "Shutting down"
+
         strip.close
       end
     end
