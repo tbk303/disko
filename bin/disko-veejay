@@ -1,0 +1,10 @@
+#!/usr/bin/env ruby
+
+$:.unshift(File.expand_path('../../lib', __FILE__))
+
+puts $:
+
+require "disko"
+
+Disko::Veejay.run!
+

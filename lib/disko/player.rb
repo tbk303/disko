@@ -6,7 +6,7 @@ module Disko
 
   class Player
 
-    def self.run
+    def self.run!
 
       disko_dir = ENV['DISKO_DIR']
 
