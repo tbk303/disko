@@ -6,7 +6,7 @@ module Disko
     def self.write_frames(name, fps, function_string)
       o = Object.new
       o.instance_eval "def f(t,x); #{function_string}; end"
-      frame_count = 20
+      frame_count = 25
       led_count = 240
       leds = (0...led_count)
       frames = (0...frame_count).map do |frame|
