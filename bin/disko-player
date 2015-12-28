@@ -3,7 +3,7 @@
 $:.unshift(File.expand_path('../../lib', __FILE__))
 $:.unshift(File.expand_path('../../vendor/ws2812/lib', __FILE__))
 
-require "disko"
+require "disko/player"
 
 Disko::Player.run!
 
