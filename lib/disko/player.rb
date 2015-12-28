@@ -22,10 +22,11 @@ module Disko
       begin
         strip.brightness = 255
 
+        ws_frames = []
+
         listener = Listen.to(ENV['DISKO_DIR']) do |modified, added, _|
 
           new_file_path = (modified || added).first
-
           puts "Detected new file #{new_file_path}"
 
           if new_file_path
@@ -33,7 +34,6 @@ module Disko
             begin
 
               rgb_frames = JSON.parse(File.read(new_file_path))["frames"]
-
               raise "Expecting JSON arrays" unless rgb_frames.is_a? Array
 
               puts "Loaded #{rgb_frames.length} frames"
@@ -41,21 +41,6 @@ module Disko
               ws_frames = rgb_frames.map do |rgb_frame|
                 rgb_frame.each_slice(3).map{|r, g, b| Ws2812::Color.new(r,g,b) }
               end
-
-              puts "Starting playback"
-
-              loop do
-                ws_frames.each do |ws_frame|
-                  ws_frame.each_with_index do |color, index|
-                    strip[index] = color
-                  end
-
-                  strip.show
-
-                  sleep (1.0 / 25.0)
-                end
-              end
-
             rescue JSON::ParserError
               puts "Unable to read #{new_file_path}"
             end
@@ -63,7 +48,18 @@ module Disko
         end
 
         listener.start
-        sleep
+
+        loop do
+          ws_frames.each do |ws_frame|
+            ws_frame.each_with_index do |color, index|
+              strip[index] = color
+            end
+
+            strip.show
+
+            sleep (1.0 / 25.0)
+          end
+        end
 
       ensure
         puts "Shutting down"
