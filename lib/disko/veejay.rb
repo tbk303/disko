@@ -21,11 +21,13 @@ module Disko
 
     end
 
+    set :public_folder, File.join(File.dirname(__FILE__), '..','..', '/static')
+
     get '/new' do
      #f1 = "[(Math.sin(t * Math::PI + (x * Math::PI)) + 1.0) / 2,  (Math.cos(t * 3.14 + (x * Math::PI)) + 1.0) / 2.0, t]"
      #'http://localhost:4567/new?name=bar&function=%5B(Math.sin(t%20*%20Math%3A%3API%20%2B%20(x%20*%20Math%3A%3API))%20%2B%201.0)%20%2F%202%2C%20%20(Math.cos(t%20*%203.14%20%2B%20(x%20*%20Math%3A%3API))%20%2B%201.0)%20%2F%202.0%2C%20t%5D'
      self.class.write_frames(params['name'], 20, params['function'])
-     "OK"
+     redirect to('/index.html')
     end
 
     set :bind, '0.0.0.0'
