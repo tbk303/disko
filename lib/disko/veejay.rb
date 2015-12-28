@@ -11,7 +11,7 @@ module Disko
       leds = (0...led_count)
       frames = (0...frame_count).map do |frame|
         leds.map do |led|
-          o.f(frame/frame_count, led/led_count).map {|v| (v * 255).to_i }
+          o.f(frame.to_f/frame_count, led.to_f/led_count).map {|v| (v * 255).to_i }
         end.flatten
       end
       hash = {frames: frames}

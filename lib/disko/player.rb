@@ -26,7 +26,7 @@ module Disko
 
         listener = Listen.to(ENV['DISKO_DIR']) do |modified, added, _|
 
-          new_file_path = (modified || added).first
+          new_file_path = (modified + added).first
           puts "Detected new file #{new_file_path}"
 
           if new_file_path
