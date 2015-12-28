@@ -6,9 +6,11 @@ module Disko
 
   class Player
 
-    def run
+    def self.run
 
-      raise "DISKO_DIR does not exist/is not configured" unless Dir.exists? ENV['DISKO_DIR']
+      disko_dir = ENV['DISKO_DIR']
+
+      raise "DISKO_DIR does not exist/is not configured" unless (disko_dir && Dir.exists?(disko_dir))
 
       strip = Ws2812::Basic.new(240, 18)
       strip.open
