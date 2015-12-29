@@ -32,4 +32,5 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "listen", "~> 3.0"
   spec.add_dependency "sinatra", "~> 1.4"
+  spec.add_dependency "therubyracer", "0.12.2"
 end

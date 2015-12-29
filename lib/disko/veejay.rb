@@ -1,5 +1,6 @@
 require 'json'
 require 'sinatra/base'
+require 'v8'
 
 module Disko
   class Veejay < Sinatra::Base
@@ -18,10 +19,35 @@ module Disko
       File.open(File.join(ENV['DISKO_DIR'], name),"w") do |f|
         f.write(hash.to_json)
       end
-
     end
 
+    def self.js_frames(name, fps, input)
+      cxt = V8::Context.new
+      cxt.eval "var func = #{input}"
+
+      frame_count = 20
+      led_count = 240
+      leds = (0...led_count)
+      frames = (0...frame_count).map do |frame|
+        leds.map do |led|
+          rgb = cxt[:func].f(frame.to_f/frame_count, led.to_f/led_count)
+          rgb.map {|v| (v * 255).to_i }
+        end.flatten
+      end
+      hash = {frames: frames}
+      File.open(File.join(ENV['DISKO_DIR'], name),"w") do |f|
+        f.write(hash.to_json)
+      end
+    end
+
+
     set :public_folder, File.join(File.dirname(__FILE__), '..','..', '/static')
+
+    get '/js' do
+     self.class.js_frames(params['name'], 20, params['function'])
+     redirect to('/index2.html')
+
+    end
 
     get '/new' do
      #f1 = "[(Math.sin(t * Math::PI + (x * Math::PI)) + 1.0) / 2,  (Math.cos(t * 3.14 + (x * Math::PI)) + 1.0) / 2.0, t]"
