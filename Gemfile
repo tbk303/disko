@@ -1,4 +1,15 @@
 source 'https://rubygems.org'
 
-# Specify your gem's dependencies in disko.gemspec
-gemspec
+ruby '2.2.3'
+
+gem 'sinatra'
+gem 'google_places'
+
+gem 'puma'
+
+group :development do
+  gem 'pry'
+  gem 'foreman'
+  gem 'shotgun'
+end
+
