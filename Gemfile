@@ -3,13 +3,16 @@ source 'https://rubygems.org'
 ruby '2.2.3'
 
 gem 'sinatra'
-gem 'google_places'
+gem 'concurrent-ruby'
+gem 'haml'
+gem 'sass'
+gem 'coffee-script'
 
 gem 'puma'
 
 group :development do
   gem 'pry'
-  gem 'foreman'
   gem 'shotgun'
+  gem 'foreman'
 end
 

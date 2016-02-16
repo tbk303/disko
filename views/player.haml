@@ -1,0 +1,55 @@
+!!!
+%head
+  %title= "Disko Player #{App::VERSION}"
+
+  %link{rel: "stylesheet", href: "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"}
+  %script{src: "//code.jquery.com/jquery-1.12.0.min.js"}
+
+  :sass
+    body
+      background-color: #555
+
+%body
+
+  .container
+    .row
+      .col-md-6
+        #patterns
+
+      .col-md-6
+        %input.form-control{type: 'text', name: 'name', placeholder: 'Name'}
+        %textarea.form-control{name: 'name', cols: 80, rows: 7}
+
+  :coffeescript
+    refreshPatterns = () ->
+      $('#patterns').empty()
+
+      $.get '/patterns', (data) ->
+        $.each data, (index, value) ->
+          eval 'var evaled = ' + value.function
+          button = $('<button class="btn btn-block">' + value.name + '<canvas width="200" height="10"/></button>')
+          button.data 'name', name
+          button.data 'evaled', evaled
+          $('#patterns').append(button)
+
+    $ ->
+      refreshPatterns()
+
+      time = 0.0
+
+      render = () ->
+        time += 0.04
+        if time > 1.0 then time = 0.0
+
+        $('#patterns button').each (_) ->
+          canvas = $(this).find('canvas').get(0)
+          context = canvas.getContext('2d')
+          evaled = $(this).data 'evaled'
+
+          for i in [0..200] by 2
+            color = evaled.f(time, i/200.0)
+            style = 'rgb(' + (color[0] * 255.0).toFixed() + ',' + (color[1] * 255.0).toFixed() + ',' + (color[2] * 255.0).toFixed() + ')'
+            context.fillStyle = style
+            context.fillRect i, 0, 2, 10
+
+      setInterval render, 40
