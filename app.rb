@@ -53,22 +53,24 @@ class App < Sinatra::Base
     {message: 'ok'}.to_json
   end
 
-  put '/store' do
+  post '/store' do
     content_type 'application/json'
 
     name = params[:name]
-    if name.blank?
+    unless name
       status 422
       return {error: 'missing required param: name'}.to_json
     end
 
     function = params[:function]
-    if function.blank?
+    unless function
       status 422
       return {error: 'missing required param: function'}.to_json
     end
 
-    pattern = Pattern.new name: name, function: function
+    pattern = Pattern.new
+    pattern.name = name
+    pattern.function = function
     $store.async.add! pattern
 
     {message: 'ok'}.to_json

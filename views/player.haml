@@ -2,38 +2,123 @@
 %head
   %title= "Disko Player #{App::VERSION}"
 
-  %link{rel: "stylesheet", href: "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"}
+  %link{rel: "stylesheet", href: "/css/bootstrap.min.css"}
   %script{src: "//code.jquery.com/jquery-1.12.0.min.js"}
 
   :sass
     body
       background-color: #555
+      padding: 15px
+
+    .row
+      margin-bottom: 15px
+
+    textarea, input[type=text]
+      font-family: monospace
+
+    #name
+      margin-bottom: 15px
+
+    #patterns .col-sm-3
+      margin-bottom: 15px
+
+    button
+      min-height: 5em
+
+    .pattern
+      position: relative
+      padding: 0
+      min-height: 5em
+
+      canvas
+        position: absolute
+        left: 0
+        top: 0
 
 %body
 
-  .container
-    .row
-      .col-md-6
-        #patterns
+  .row
+    .col-sm-10
+      #current.pattern.btn.btn-default.btn-block
+        %canvas
 
-      .col-md-6
-        %input.form-control{type: 'text', name: 'name', placeholder: 'Name'}
-        %textarea.form-control{name: 'name', cols: 80, rows: 7}
+    .col-sm-2
+      %button#edit.btn.btn-block.btn-primary Edit
+
+  .row
+    #editor{style: 'display:none;'}
+      .col-sm-8
+        %textarea#function.form-control{name: 'name', cols: 80, rows: 7}
+      .col-sm-4
+        %input#name.form-control{type: 'text', name: 'name', placeholder: 'Name'}
+        .row
+          .col-sm-6
+            %button.btn.btn-block.btn-success#preview Preview
+          .col-sm-6
+            %button.btn.btn-block.btn-primary#store Save
+
+  .row
+    #patterns
 
   :coffeescript
+    mode = 'play'
+
+    toggleMode = () ->
+      if mode == 'play'
+        mode = 'edit'
+        $('#editor').slideDown()
+        $(this).removeClass 'btn-primary'
+        $(this).addClass 'btn-danger'
+      else
+        if mode == 'edit'
+          mode = 'play'
+          $('#editor').slideUp()
+          $(this).removeClass 'btn-danger'
+          $(this).addClass 'btn-primary'
+
+    preview = () ->
+      eval 'var evaled = ' + $('#function').val()
+      $('#current').data 'evaled', evaled
+
+    select = () ->
+      name = $(this).data 'name'
+      evaled = $(this).data 'evaled'
+      func = $(this).data 'func'
+
+      $('#current').data 'name', name
+      $('#current').data 'evaled', evaled
+
+      if mode == 'play'
+        $.ajax '/play/' + name, method: 'PUT'
+
+      if mode == 'edit'
+        $('#function').val(func)
+        $('#name').val(name)
+
     refreshPatterns = () ->
       $('#patterns').empty()
 
       $.get '/patterns', (data) ->
         $.each data, (index, value) ->
           eval 'var evaled = ' + value.function
-          button = $('<button class="btn btn-block">' + value.name + '<canvas width="200" height="10"/></button>')
-          button.data 'name', name
+          col = $('<div class="col-sm-3"></div>')
+          button = $('<button class="btn btn-block pattern"><canvas/></button>')
+          button.data 'name', value.name
           button.data 'evaled', evaled
-          $('#patterns').append(button)
+          button.data 'func', value.function
+          button.on 'click', select
+          col.append(button)
+          $('#patterns').append(col)
+
+    store = () ->
+      $.post '/store', {'name': $('#name').val(), 'function': $('#function').val() }, refreshPatterns
 
     $ ->
       refreshPatterns()
+
+      $('#preview').on 'click', preview
+      $('#store').on 'click', store
+      $('#edit').on 'click', toggleMode
 
       time = 0.0
 
@@ -41,15 +126,21 @@
         time += 0.04
         if time > 1.0 then time = 0.0
 
-        $('#patterns button').each (_) ->
+        $('.pattern').each (_) ->
           canvas = $(this).find('canvas').get(0)
+          canvas.style.width ='100%'
+          canvas.style.height='100%'
+          canvas.width  = canvas.offsetWidth
+          canvas.height = canvas.offsetHeight
+
           context = canvas.getContext('2d')
           evaled = $(this).data 'evaled'
 
-          for i in [0..200] by 2
-            color = evaled.f(time, i/200.0)
-            style = 'rgb(' + (color[0] * 255.0).toFixed() + ',' + (color[1] * 255.0).toFixed() + ',' + (color[2] * 255.0).toFixed() + ')'
-            context.fillStyle = style
-            context.fillRect i, 0, 2, 10
+          if evaled?
+            for i in [0..canvas.width] by 2
+              color = evaled.f(time, i/canvas.width)
+              style = 'rgb(' + (color[0] * 255.0).toFixed() + ',' + (color[1] * 255.0).toFixed() + ',' + (color[2] * 255.0).toFixed() + ')'
+              context.fillStyle = style
+              context.fillRect i, 0, 2, canvas.height
 
       setInterval render, 40
