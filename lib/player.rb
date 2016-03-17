@@ -21,6 +21,7 @@ class Player
         App.logger.info "Initializing player with #{ENV['LED_COUNT']} leds on GPIO #{ENV['GPIO_PIN']}"
         @strip = Ws2812::Basic.new(ENV['LED_COUNT'].to_i, ENV['GPIO_PIN'].to_i)
         @strip.open
+        @strip.brightness = 255
       rescue Exception => e
         App.logger.warn "Error initializing player: #{e.message}"
         @strip = nil
@@ -42,6 +43,7 @@ class Player
       loop do
         @frames.each do |frame|
           if @strip
+            App.logger.info '.'
             frame.each_with_index do |color, index|
               @strip[index] = color
             end
@@ -62,7 +64,9 @@ class Player
   end
 
   def play! pattern
-    @frames = pattern.frames
+    @frames = pattern.frames.map do |rgb_frame|
+      rgb_frame.each_slice(3).map{|r, g, b| Ws2812::Color.new(r,g,b) }
+    end
 
     App.logger.info "Playing pattern #{pattern.name}"
   end
