@@ -19,7 +19,7 @@ class Player
     else
       begin
         App.logger.info "Initializing player with #{ENV['LED_COUNT']} leds on GPIO #{ENV['GPIO_PIN']}"
-        @strip = Ws2812::Basic.new(ENV['LED_COUNT'], ENV['GPIO_PIN'])
+        @strip = Ws2812::Basic.new(ENV['LED_COUNT'].to_i, ENV['GPIO_PIN'].to_i)
         @strip.open
       rescue Exception => e
         App.logger.warn "Error initializing player: #{e.message}"
