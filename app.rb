@@ -68,10 +68,7 @@ class App < Sinatra::Base
       return {error: 'missing required param: function'}.to_json
     end
 
-    pattern = Pattern.new
-    pattern.name = name
-    pattern.function = function
-    $store.async.add! pattern
+    $store.async.update! name, function
 
     {message: 'ok'}.to_json
   end

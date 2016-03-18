@@ -1,4 +1,5 @@
 require 'json'
+require 'v8'
 
 class Pattern
 
@@ -14,7 +15,22 @@ class Pattern
   end
 
   def ensure_frames
-    if frames.nil?
+    if self.frames.nil?
+      App.logger.info "Generating frames for #{name}"
+
+      v8 = V8::Context.new
+      v8.eval "var func = #{function}"
+
+      frame_count = 25
+      led_count = ENV['LED_COUNT'].to_i
+      leds = (0...led_count)
+
+      self.frames = (0...frame_count).map do |frame|
+        leds.map do |led|
+          rgb = v8[:func].f(frame.to_f / frame_count, led.to_f / led_count)
+          rgb.map {|v| (v * 255).to_i }
+        end.flatten
+      end
     end
   end
 

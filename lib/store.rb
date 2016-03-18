@@ -37,16 +37,36 @@ class Store
     end
   end
 
-  def add! pattern
-    pattern.ensure_frames
+  def update! name, function
+    App.logger.info "Storing pattern #{name}"
 
-    @patterns << pattern
+    existing_pattern = find_by_name name
+
+    if existing_pattern
+      return if !existing_pattern.frames.nil? && existing_pattern.function == function
+
+      pattern = existing_pattern
+    else
+      pattern = Pattern.new
+      @patterns << pattern
+    end
+
+    pattern.name = name
+    pattern.function = function
+
+
+    pattern.ensure_frames
 
     file_name = "#{pattern.name.downcase.gsub(/[^0-9a-z ]/i, '')}.json"
 
     File.open(File.join(ENV['DISKO_DIR'], file_name), 'w') do |file|
       file.write pattern.to_json
     end
+
+    App.logger.info "Pattern #{name} stored"
+  rescue Exception => e
+    App.logger.info e.message
+    App.logger.info e.backtrace
   end
 
 end

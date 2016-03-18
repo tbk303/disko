@@ -10,7 +10,7 @@ class Player
     super
 
     @running = false
-    @frames = nil
+    @frames = []
     @fps = 25.0
 
     if ENV['LED_COUNT'].nil? || ENV['GPIO_PIN'].nil?
@@ -40,7 +40,7 @@ class Player
 
       App.logger.info 'Player running'
 
-      loop do
+      begin
         @frames.each do |frame|
           if @strip
             App.logger.info '.'
@@ -52,10 +52,8 @@ class Player
           end
 
           sleep(1.0 / @fps.to_f)
-
-          break if @stop_requested
         end
-      end
+      end until @stop_requestsd
 
       @running = false
 
@@ -64,11 +62,16 @@ class Player
   end
 
   def play! pattern
-    @frames = pattern.frames.map do |rgb_frame|
-      rgb_frame.each_slice(3).map{|r, g, b| Ws2812::Color.new(r,g,b) }
+    unless pattern.frames
+      App.logger.info "Cannot play #{pattern.name}, frames not ready"
+      return
     end
 
     App.logger.info "Playing pattern #{pattern.name}"
+
+    @frames = pattern.frames.map do |rgb_frame|
+      rgb_frame.each_slice(3).map{|r, g, b| Ws2812::Color.new(r,g,b) }
+    end
   end
 
   def stop!
