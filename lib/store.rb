@@ -43,7 +43,7 @@ class Store
     existing_pattern = find_by_name name
 
     if existing_pattern
-      #return if !existing_pattern.frames.nil? && existing_pattern.function == function
+      return if !existing_pattern.frames.nil? && existing_pattern.function == function
 
       pattern = existing_pattern
     else
