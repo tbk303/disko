@@ -43,7 +43,6 @@ class Player
       begin
         @frames.each do |frame|
           if @strip
-            App.logger.info '.'
             frame.each_with_index do |color, index|
               @strip[index] = color
             end
