@@ -54,8 +54,7 @@ class Store
     pattern.name = name
     pattern.function = function
 
-
-    pattern.ensure_frames
+    pattern.generate_frames
 
     file_name = "#{pattern.name.downcase.gsub(/[^0-9a-z ]/i, '')}.json"
 
