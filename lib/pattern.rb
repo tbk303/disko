@@ -30,6 +30,7 @@ class Pattern
         rgb.map {|v| (v * 255).to_i }
       end.flatten
     end
+    App.logger.info "Finished frame generation for #{name}"
   end
 
   def to_json
