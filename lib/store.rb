@@ -1,10 +1,8 @@
 require 'json'
 require 'singleton'
-require 'concurrent/async'
 
 class Store
   include Singleton
-  include Concurrent::Async
 
   def initialize
     super

@@ -19,10 +19,10 @@ class App < Sinatra::Base
     set :logger, $logger
 
     $player ||= Player.instance
-    $player.async.run!
+    $player.run!
 
     $store ||= Store.instance
-    $store.async.load_all!
+    $store.load_all!
   end
 
   get '/player' do
