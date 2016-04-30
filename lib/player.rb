@@ -8,6 +8,8 @@ class Player
   def initialize
     super
 
+    @writer = nil
+
     @pid = nil
 
     @fps = 25.0
@@ -53,6 +55,8 @@ class Player
         if new_message != last_message
           last_message = new_message
 
+          App.logger.info "New message received: #{last_message}"
+
           if last_message == ':stop:'
             stop_requested = true
           else
@@ -82,6 +86,8 @@ class Player
 
       App.logger.info 'Player stopped'
     end
+
+    reader.close
   end
 
   def play! pattern
@@ -91,7 +97,7 @@ class Player
     end
 
     App.logger.info "Playing pattern #{pattern.name}"
-    @writer.puts pattern.function
+    @writer.puts pattern.function.delete("\n")
   end
 
   def stop!
