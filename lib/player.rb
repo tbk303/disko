@@ -12,7 +12,7 @@ class Player
 
     @pid = nil
 
-    @fps = 25.0
+    @fps = 30.0
   end
 
   def run!
@@ -43,49 +43,44 @@ class Player
       last_message = nil
       v8 = nil
 
+      App.logger.info "Player running with target #{@fps} fps"
+
       begin
-        App.logger.info 'Player running'
+        App.logger.info 'Loop start'
 
-        readables, _, = IO.select [reader]
-
-        if readables.any?
-          new_message = readables.first.gets
-        end
-
-        if new_message != last_message
-          last_message = new_message
-
-          App.logger.info "New message received: #{last_message}"
-
-          if last_message == ':stop:'
-            stop_requested = true
-          else
-            v8 = V8::Context.new
-            v8.eval "var func = #{last_message}"
-          end
-        end
+        pi2 = Math::PI * 2.0
 
         (0...@fps).each do |frame|
-          if v8
+            start = Time.now
+ 
+            t = frame.to_f / @fps
             (0...led_count).each do |led|
-              rgb = v8[:func].f(frame.to_f / @fps, led.to_f / led_count)
+              #rgb = v8[:func].f(t, led.to_f / led_count)
+              x = led.to_f / led_count
+              rgb = [(Math.sin(t * pi2 + (x * pi2)) + 1.0) / 2.0,  (Math.cos(t * 3.14 + (x * pi2)) + 1.0) / 2.0, t]
+
               r, g, b = rgb.map {|v| (v * 255).to_i }
 
-              if @strip
+              if strip
                 color = Ws2812::Color.new(r,g,b)
-                @strip[led] = color
+                strip[led] = color
               end
             end
-          end
 
-          @strip.show if @strip
-          sleep(1.0 / @fps.to_f)
+          strip.show if strip
+
+            duration = Time.now - start
+
+          diff = (1.0 / @fps.to_f) - duration
+          sleep(diff) if diff > 0
         end
 
       end until stop_requested
 
       App.logger.info 'Player stopped'
     end
+
+    App.logger.info "Player running with PID #{@pid}"
 
     reader.close
   end
