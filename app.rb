@@ -62,13 +62,14 @@ class App < Sinatra::Base
       return {error: 'missing required param: name'}.to_json
     end
 
-    function = params[:function]
-    unless function
+    function_js = params['function_js']
+    function_rb = params['function_rb']
+    unless function_js && function_rb
       status 422
-      return {error: 'missing required param: function'}.to_json
+      return {error: 'missing required param: function_js and/or function_rb'}.to_json
     end
 
-    $store.async.update! name, function
+    $store.update! name, function_js, function_rb
 
     {message: 'ok'}.to_json
   end
@@ -78,7 +79,7 @@ class App < Sinatra::Base
 
     patterns = $store.patterns
 
-    patterns.map{|p| {name: p.name, function: p.function}}.to_json
+    patterns.map(&:to_json).to_json
   end
 
   get '/' do

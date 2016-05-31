@@ -1,6 +1,6 @@
 require 'singleton'
 require 'ws2812'
-require 'v8'
+require 'renderer'
 
 class Player
   include Singleton
@@ -21,8 +21,6 @@ class Player
     @pid = fork do
       @writer.close
 
-      stop_requested = false
-
       if ENV['LED_COUNT'].nil? || ENV['GPIO_PIN'].nil?
         App.logger.warn 'LED_COUNT and/or GPIO_PIN not set in environment, putting player in sandbox mode'
         strip = nil
@@ -40,42 +38,68 @@ class Player
 
       led_count = ENV['LED_COUNT'].to_i
 
-      last_message = nil
-      v8 = nil
+      renderer = nil
+      speed = 1.0
 
-      App.logger.info "Player running with target #{@fps} fps"
+      thread = Thread.new do
+        App.logger.info "Player running with target #{@fps} fps"
 
-      begin
-        App.logger.info 'Loop start'
-
-        pi2 = Math::PI * 2.0
-
-        (0...@fps).each do |frame|
+        loop do
+          (0...@fps).each do |frame|
             start = Time.now
- 
+
             t = frame.to_f / @fps
+
             (0...led_count).each do |led|
-              #rgb = v8[:func].f(t, led.to_f / led_count)
               x = led.to_f / led_count
-              rgb = [(Math.sin(t * pi2 + (x * pi2)) + 1.0) / 2.0,  (Math.cos(t * 3.14 + (x * pi2)) + 1.0) / 2.0, t]
 
-              r, g, b = rgb.map {|v| (v * 255).to_i }
+              if renderer
+                r, g, b = renderer.render(x, t)
 
-              if strip
-                color = Ws2812::Color.new(r,g,b)
-                strip[led] = color
+                if strip
+                  color = Ws2812::Color.new((255 * r).to_i, (255 * g).to_i, (255 * b).to_i)
+                  strip[led] = color
+                else
+                  Rails.logger.info "Rendering #{[r, g, b]}"
+                end
               end
             end
 
-          strip.show if strip
+            strip.show if strip
 
             duration = Time.now - start
 
-          diff = (1.0 / @fps.to_f) - duration
-          sleep(diff) if diff > 0
+            diff = (1.0 / @fps.to_f) - duration
+            sleep(diff) if diff > 0
+          end
+        end
+      end
+
+      stop_requested = false
+
+      begin
+        message = reader.gets
+
+        App.logger.info "Received message #{message}"
+
+        case message
+        when ':stop:'
+          stop_requested = true
+        when /:speed: (\d+)/
+          new_speed = $1
+        else
+          mod = SecureRandom.hex(3).upcase
+          new_renderer = eval message.gsub('\n', "\n") + "\n Renderer.new"
+
+          if new_renderer.is_a? Renderer
+            renderer = new_renderer.new
+          end
         end
 
       end until stop_requested
+
+      thread.exit
+      strip.close if strip
 
       App.logger.info 'Player stopped'
     end
@@ -92,7 +116,7 @@ class Player
     end
 
     App.logger.info "Playing pattern #{pattern.name}"
-    @writer.puts pattern.function.delete("\n")
+    @writer.puts pattern.function_rb.gsub("\n", '\n')
   end
 
   def stop!

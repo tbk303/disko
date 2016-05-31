@@ -35,14 +35,12 @@ class Store
     end
   end
 
-  def update! name, function
+  def update! name, function_js, function_rb
     App.logger.info "Storing pattern #{name}"
 
     existing_pattern = find_by_name name
 
     if existing_pattern
-      return if !existing_pattern.frames.nil? && existing_pattern.function == function
-
       pattern = existing_pattern
     else
       pattern = Pattern.new
@@ -50,9 +48,8 @@ class Store
     end
 
     pattern.name = name
-    pattern.function = function
-
-    pattern.generate_frames
+    pattern.function_js = function_js
+    pattern.function_rb = function_rb
 
     file_name = "#{pattern.name.downcase.gsub(/[^0-9a-z ]/i, '')}.json"
 

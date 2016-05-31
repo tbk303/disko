@@ -4,6 +4,8 @@
 
   %link{rel: "stylesheet", href: "/css/bootstrap.min.css"}
   %script{src: "//code.jquery.com/jquery-1.12.0.min.js"}
+  %script{src: "//cdn.opalrb.org/opal/0.9.2/opal.min.js"}
+  %script{src: "//cdn.opalrb.org/opal/0.9.2/opal-parser.min.js"}
 
   :sass
     body
@@ -39,7 +41,7 @@
 
   .row
     .col-sm-10
-      #current.pattern.btn.btn-default.btn-block
+      #current.btn.btn-default.btn-block.pattern
         %canvas
 
     .col-sm-2
@@ -48,7 +50,8 @@
   .row
     #editor{style: 'display:none;'}
       .col-sm-8
-        %textarea#function.form-control{name: 'name', cols: 80, rows: 7}
+        %textarea#render_rb.form-control{name: 'name', cols: 80, rows: 7}
+        %textarea#render_js.form-control{name: 'name', cols: 80, rows: 7, disabled: true}
       .col-sm-4
         %input#name.form-control{type: 'text', name: 'name', placeholder: 'Name'}
         .row
@@ -61,6 +64,8 @@
     #patterns
 
   :coffeescript
+    Opal.load('opal-parser')
+
     mode = 'play'
 
     toggleMode = () ->
@@ -77,22 +82,31 @@
           $(this).addClass 'btn-primary'
 
     preview = () ->
-      eval 'var evaled = ' + $('#function').val()
+      compiled = Opal.compile $('#render_rb').val()
+      $('#render_js').val(compiled)
+      eval compiled + "\n var evaled = Opal.Renderer.$new();"
       $('#current').data 'evaled', evaled
+      $('#current').data 'render_js', compiled
+      $('#current').data 'render_rb', $('#render_rb').val()
+
 
     select = () ->
       name = $(this).data 'name'
       evaled = $(this).data 'evaled'
-      func = $(this).data 'func'
+      render_js = $(this).data 'render_js'
+      render_rb = $(this).data 'render_rb'
 
       $('#current').data 'name', name
       $('#current').data 'evaled', evaled
+      $('#current').data 'render_js', render_js
+      $('#current').data 'render_rb', render_rb
 
       if mode == 'play'
         $.ajax '/play/' + name, method: 'PUT'
 
       if mode == 'edit'
-        $('#function').val(func)
+        $('#render_js').val(render_js)
+        $('#render_rb').val(render_rb)
         $('#name').val(name)
 
     refreshPatterns = () ->
@@ -100,18 +114,23 @@
 
       $.get '/patterns', (data) ->
         $.each data, (index, value) ->
-          eval 'var evaled = ' + value.function
+          eval 'var evaled = ' + value.render_js
           col = $('<div class="col-sm-3"></div>')
           button = $('<button class="btn btn-block pattern"><canvas/></button>')
           button.data 'name', value.name
           button.data 'evaled', evaled
-          button.data 'func', value.function
+          button.data 'render_js', value.render_js
+          button.data 'render_rb', value.render_rb
           button.on 'click', select
           col.append(button)
           $('#patterns').append(col)
 
     store = () ->
-      $.post '/store', {'name': $('#name').val(), 'function': $('#function').val() }, refreshPatterns
+      $.post '/store', {
+        'name': $('#name').val(),
+        'render_rb': $('#current').data('render_rb'),
+        'render_js': $('#current').data('render_js') },
+        refreshPatterns
 
     $ ->
       refreshPatterns()
@@ -138,7 +157,10 @@
 
           if evaled?
             for i in [0..canvas.width] by 2
-              color = evaled.f(time, i/canvas.width)
+              if evaled.f
+                color = evaled.f(time, i/canvas.width)
+              else
+                color = evaled.$render(time, i/canvas.width)
               style = 'rgb(' + (color[0] * 255.0).toFixed() + ',' + (color[1] * 255.0).toFixed() + ',' + (color[2] * 255.0).toFixed() + ')'
               context.fillStyle = style
               context.fillRect i, 0, 2, canvas.height
