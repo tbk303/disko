@@ -54,7 +54,7 @@ class Player
               x = led.to_f / led_count
 
               if renderer
-                r, g, b = renderer.render(x, t)
+                r, g, b = renderer(x, t)
 
                 if strip
                   color = Ws2812::Color.new((255 * r).to_i, (255 * g).to_i, (255 * b).to_i)
@@ -88,11 +88,10 @@ class Player
         when /:speed: (\d+)/
           new_speed = $1
         else
-          mod = SecureRandom.hex(3).upcase
-          new_renderer = eval message.gsub('\n', "\n") + "\n Renderer.new"
+          new_renderer = eval "Proc.new{|x,t|\n #{message.gsub('\n', "\n")} \n}"
 
-          if new_renderer.is_a? Renderer
-            renderer = new_renderer.new
+          if new_renderer.is_a? Proc
+            renderer = new_renderer
           end
         end
 
@@ -109,14 +108,14 @@ class Player
     reader.close
   end
 
-  def play! pattern
+  def play! render
     unless @writer
       App.logger.info "Cannot play pattern #{pattern.name}, pipe not ready"
       return
     end
 
-    App.logger.info "Playing pattern #{pattern.name}"
-    @writer.puts pattern.function_rb.gsub("\n", '\n')
+    App.logger.info "Playing new pattern"
+    @writer.puts render.gsub("\n", '\n')
   end
 
   def stop!

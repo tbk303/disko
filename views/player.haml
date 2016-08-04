@@ -11,6 +11,7 @@
     body
       background-color: #555
       padding: 15px
+      color: white
 
     .row
       margin-bottom: 15px
@@ -40,8 +41,22 @@
 %body
 
   .row
-    .col-sm-10
-      #current.btn.btn-default.btn-block.pattern
+    .col-sm-1
+      %h2 PGM
+
+    .col-sm-9
+      #pgm.btn.btn-default.btn-block.pattern
+        %canvas
+
+    .col-sm-2
+      %button#take.btn.btn-block.btn-danger Take
+
+  .row
+    .col-sm-1
+      %h2 PVW
+
+    .col-sm-9
+      #pvw.btn.btn-default.btn-block.pattern
         %canvas
 
     .col-sm-2
@@ -50,15 +65,14 @@
   .row
     #editor{style: 'display:none;'}
       .col-sm-8
-        %textarea#render_rb.form-control{name: 'name', cols: 80, rows: 7}
-        %textarea#render_js.form-control{name: 'name', cols: 80, rows: 7, disabled: true}
+        %textarea#render.form-control{name: 'name', cols: 80, rows: 7}
       .col-sm-4
         %input#name.form-control{type: 'text', name: 'name', placeholder: 'Name'}
         .row
           .col-sm-6
             %button.btn.btn-block.btn-success#preview Preview
           .col-sm-6
-            %button.btn.btn-block.btn-primary#store Save
+            %button.btn.btn-block.btn-warning#store Save
 
   .row
     #patterns
@@ -66,61 +80,64 @@
   :coffeescript
     Opal.load('opal-parser')
 
+    String::startsWith ?= (s) -> @slice(0, s.length) == s
+    String::endsWith   ?= (s) -> s == '' or @slice(-s.length) == s
+
     mode = 'play'
+
+    evalRb = (code) ->
+      Opal.eval "Proc.new{|x,t| " + code + "}"
 
     toggleMode = () ->
       if mode == 'play'
         mode = 'edit'
-        $('#editor').slideDown()
+        $('#editor').slideDown(100)
         $(this).removeClass 'btn-primary'
-        $(this).addClass 'btn-danger'
+        $(this).addClass 'btn-info'
       else
         if mode == 'edit'
           mode = 'play'
-          $('#editor').slideUp()
-          $(this).removeClass 'btn-danger'
+          $('#editor').slideUp(100)
+          $(this).removeClass 'btn-info'
           $(this).addClass 'btn-primary'
 
     preview = () ->
-      compiled = Opal.compile $('#render_rb').val()
-      $('#render_js').val(compiled)
-      eval compiled + "\n var evaled = Opal.Renderer.$new();"
-      $('#current').data 'evaled', evaled
-      $('#current').data 'render_js', compiled
-      $('#current').data 'render_rb', $('#render_rb').val()
+      evaled = evalRb $('#render').val()
+      $('#pvw').data 'evaled', evaled
+      $('#pvw').data 'render', $('#render').val()
 
 
     select = () ->
       name = $(this).data 'name'
       evaled = $(this).data 'evaled'
-      render_js = $(this).data 'render_js'
-      render_rb = $(this).data 'render_rb'
+      render = $(this).data 'render'
 
-      $('#current').data 'name', name
-      $('#current').data 'evaled', evaled
-      $('#current').data 'render_js', render_js
-      $('#current').data 'render_rb', render_rb
+      $('#pvw').data 'name', name
+      $('#pvw').data 'evaled', evaled
+      $('#pvw').data 'render', render
+      $('#render').val(render)
+      $('#name').val(name)
 
-      if mode == 'play'
-        $.ajax '/play/' + name, method: 'PUT'
-
-      if mode == 'edit'
-        $('#render_js').val(render_js)
-        $('#render_rb').val(render_rb)
-        $('#name').val(name)
+    take = () ->
+      if $('#name').val()
+        $('#pgm').data 'name', $('#pvw').data('name')
+        $('#pgm').data 'evaled', $('#pvw').data('evaled')
+        $('#pgm').data 'render', $('#pvw').data('render')
+        $.ajax '/play',
+          data: {render: $('#pgm').data('render')}
+          method: 'PUT'
 
     refreshPatterns = () ->
       $('#patterns').empty()
 
       $.get '/patterns', (data) ->
         $.each data, (index, value) ->
-          eval 'var evaled = ' + value.render_js
+          evaled = evalRb value.render
           col = $('<div class="col-sm-3"></div>')
           button = $('<button class="btn btn-block pattern"><canvas/></button>')
           button.data 'name', value.name
           button.data 'evaled', evaled
-          button.data 'render_js', value.render_js
-          button.data 'render_rb', value.render_rb
+          button.data 'render', value.render
           button.on 'click', select
           col.append(button)
           $('#patterns').append(col)
@@ -128,9 +145,27 @@
     store = () ->
       $.post '/store', {
         'name': $('#name').val(),
-        'render_rb': $('#current').data('render_rb'),
-        'render_js': $('#current').data('render_js') },
+        'render': $('#pvw').data('render'),
         refreshPatterns
+      }
+
+    renderPattern = (pattern, time) ->
+      canvas = pattern.find('canvas').get(0)
+      canvas.style.width ='100%'
+      canvas.style.height='100%'
+      canvas.width  = canvas.offsetWidth
+      canvas.height = canvas.offsetHeight
+
+      context = canvas.getContext('2d')
+      evaled = pattern.data 'evaled'
+
+      if evaled?
+        for i in [0..canvas.width] by 2
+          color = evaled(time, i/canvas.width)
+          style = 'rgb(' + (color[0] * 255.0).toFixed() + ',' + (color[1] * 255.0).toFixed() + ',' + (color[2] * 255.0).toFixed() + ')'
+          context.fillStyle = style
+          context.fillRect i, 0, 2, canvas.height
+
 
     $ ->
       refreshPatterns()
@@ -138,31 +173,22 @@
       $('#preview').on 'click', preview
       $('#store').on 'click', store
       $('#edit').on 'click', toggleMode
+      $('#take').on 'click', take
 
-      time = 0.0
+      renderTime = 0.0
+      previewTime = 0.0
 
-      render = () ->
-        time += 0.04
-        if time > 1.0 then time = 0.0
+      renderLoop = () ->
+        renderTime += 0.033
+        if renderTime > 1.0 then renderTime = 0.0
+        renderPattern $('#pgm'), renderTime
+        renderPattern $('#pvw'), renderTime
 
-        $('.pattern').each (_) ->
-          canvas = $(this).find('canvas').get(0)
-          canvas.style.width ='100%'
-          canvas.style.height='100%'
-          canvas.width  = canvas.offsetWidth
-          canvas.height = canvas.offsetHeight
+      previewLoop = () ->
+        previewTime += 0.1
+        if previewTime > 1.0 then previewTime = 0.0
+        $('#patterns .pattern').each (_) ->
+          renderPattern $(this), previewTime
 
-          context = canvas.getContext('2d')
-          evaled = $(this).data 'evaled'
-
-          if evaled?
-            for i in [0..canvas.width] by 2
-              if evaled.f
-                color = evaled.f(time, i/canvas.width)
-              else
-                color = evaled.$render(time, i/canvas.width)
-              style = 'rgb(' + (color[0] * 255.0).toFixed() + ',' + (color[1] * 255.0).toFixed() + ',' + (color[2] * 255.0).toFixed() + ')'
-              context.fillStyle = style
-              context.fillRect i, 0, 2, canvas.height
-
-      setInterval render, 40
+      setInterval renderLoop, 33
+      setInterval previewLoop, 500

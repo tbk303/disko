@@ -35,7 +35,7 @@ class Store
     end
   end
 
-  def update! name, function_js, function_rb
+  def update! name, render
     App.logger.info "Storing pattern #{name}"
 
     existing_pattern = find_by_name name
@@ -48,13 +48,12 @@ class Store
     end
 
     pattern.name = name
-    pattern.function_js = function_js
-    pattern.function_rb = function_rb
+    pattern.render = render
 
     file_name = "#{pattern.name.downcase.gsub(/[^0-9a-z ]/i, '')}.json"
 
     File.open(File.join(ENV['DISKO_DIR'], file_name), 'w') do |file|
-      file.write pattern.to_json
+      file.write JSON.generate(pattern.to_json)
     end
 
     App.logger.info "Pattern #{name} stored"

@@ -33,22 +33,16 @@ class App < Sinatra::Base
     haml :editor, format: :html5
   end
 
-  put '/play/:name' do
+  put '/play' do
     content_type 'application/json'
 
-    name = params[:name]
-    if name.nil?
+    renderer = params[:render]
+    if renderer.nil?
       status 422
-      return {error: 'missing required param: name'}.to_json
+      return {error: 'missing required param: render'}.to_json
     end
 
-    pattern = $store.find_by_name name
-    unless pattern
-      status 404
-      return {error: "unknown pattern: #{name}"}.to_json
-    end
-
-    $player.play! pattern
+    $player.play! renderer
 
     {message: 'ok'}.to_json
   end
@@ -62,14 +56,13 @@ class App < Sinatra::Base
       return {error: 'missing required param: name'}.to_json
     end
 
-    function_js = params['function_js']
-    function_rb = params['function_rb']
-    unless function_js && function_rb
+    render = params['render']
+    unless render
       status 422
-      return {error: 'missing required param: function_js and/or function_rb'}.to_json
+      return {error: 'missing required param: render'}.to_json
     end
 
-    $store.update! name, function_js, function_rb
+    $store.update! name, render
 
     {message: 'ok'}.to_json
   end
