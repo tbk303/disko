@@ -47,6 +47,22 @@ class App < Sinatra::Base
     {message: 'ok'}.to_json
   end
 
+  put '/speed' do
+    content_type 'application/json'
+
+    speedFactor = params[:speedFactor]
+
+    validFloat = !!Float(speedFactor) rescue false
+    if !validFloat || speedFactor < 0
+      status 422
+      return {error: 'invalid param: speedFactor'}.to_json
+    end
+
+    $player.speed! speedFactor
+
+    {message: 'ok'}.to_json
+  end
+
   post '/store' do
     content_type 'application/json'
 

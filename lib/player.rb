@@ -87,6 +87,7 @@ class Player
           stop_requested = true
         when /:speed: (\d+)/
           new_speed = $1
+          speed = new_speed / 10.0
         else
           new_renderer = eval "Proc.new{|x,t|\n #{message.gsub('\n', "\n")} \n}"
 
@@ -132,5 +133,15 @@ class Player
     @pid = nil
     @write = nil
     App.logger.info "Player stopped"
+  end
+
+  def speed! speed
+    unless @writer
+      App.logger.info 'Cannot set speed, pipe not ready'
+      return
+    end
+
+    App.logger "Setting new speed #{speed}"
+    @write.puts ":speed: #{(speed * 10).round}"
   end
 end

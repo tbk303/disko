@@ -44,23 +44,34 @@
     .col-sm-1
       %h2 PGM
 
-    .col-sm-9
+    .col-sm-8
       #pgm.btn.btn-default.btn-block.pattern
         %canvas
 
-    .col-sm-2
-      %button#take.btn.btn-block.btn-danger Take
+    .col-sm-3
+      .row
+        .col-sm-3
+          %button#slower.btn.btn-block -
+        .col-sm-3
+          %h2#speed.text-center
+            1.0
+        .col-sm-3
+          %button#faster.btn.btn-block +
 
   .row
     .col-sm-1
       %h2 PVW
 
-    .col-sm-9
+    .col-sm-8
       #pvw.btn.btn-default.btn-block.pattern
         %canvas
 
-    .col-sm-2
-      %button#edit.btn.btn-block.btn-primary Edit
+    .col-sm-3
+      .row
+        .col-sm-6
+          %button#edit.btn.btn-block.btn-primary Edit
+        .col-sm-6
+          %button#take.btn.btn-block.btn-danger Take
 
   .row
     #editor{style: 'display:none;'}
@@ -84,6 +95,8 @@
     String::endsWith   ?= (s) -> s == '' or @slice(-s.length) == s
 
     mode = 'play'
+
+    speedFactor = 1.0
 
     evalRb = (code) ->
       Opal.eval "Proc.new{|x,t| " + code + "}"
@@ -166,6 +179,21 @@
           context.fillStyle = style
           context.fillRect i, 0, 2, canvas.height
 
+    increaseSpeed = () ->
+      speedFactor += 0.1
+      speedFactor = Math.min speedFactor, 10.0
+      $('#speed').text Math.round(speedFactor * 10.0) / 10.0
+      $.ajax '/speed',
+        data: {speedFactor: speedFactor}
+        method: 'PUT'
+
+    decreaseSpeed = () ->
+      speedFactor -= 0.1
+      speedFactor = Math.max speedFactor, 0.0
+      $('#speed').text Math.round(speedFactor * 10.0) / 10.0
+      $.ajax '/speed',
+        data: {speedFactor: speedFactor}
+        method: 'PUT'
 
     $ ->
       refreshPatterns()
@@ -174,21 +202,33 @@
       $('#store').on 'click', store
       $('#edit').on 'click', toggleMode
       $('#take').on 'click', take
+      $('#faster').on 'click', increaseSpeed
+      $('#slower').on 'click', decreaseSpeed
 
       renderTime = 0.0
       previewTime = 0.0
 
       renderLoop = () ->
-        renderTime += 0.033
-        if renderTime > 1.0 then renderTime = 0.0
-        renderPattern $('#pgm'), renderTime
-        renderPattern $('#pvw'), renderTime
+        setTimeout () ->
+          renderTime += 0.0333 * speedFactor
+          if renderTime > 1.0 then renderTime = 0.0
+
+          renderPattern $('#pgm'), renderTime
+          renderPattern $('#pvw'), renderTime
+
+          window.requestAnimationFrame(renderLoop)
+        , 33
 
       previewLoop = () ->
-        previewTime += 0.1
-        if previewTime > 1.0 then previewTime = 0.0
-        $('#patterns .pattern').each (_) ->
-          renderPattern $(this), previewTime
+        setTimeout () ->
+          previewTime += 0.1 * speedFactor
+          if previewTime > 1.0 then previewTime = 0.0
+          $('#patterns .pattern').each (_) ->
+            renderPattern $(this), previewTime
 
-      setInterval renderLoop, 33
-      setInterval previewLoop, 500
+          window.requestAnimationFrame(previewLoop)
+        , 100
+
+      renderLoop(0)
+      previewLoop(0)
+
