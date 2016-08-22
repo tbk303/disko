@@ -48,16 +48,19 @@ class Player
     App.logger.info "Player running with target #{@fps} fps"
 
     begin
-      (0...@fps).each do |frame|
+      frame = 0
+
+      while frame < @fps 
         start = Time.now
 
         t = frame.to_f / @fps
 
-        (0...@led_count).each do |led|
+        led = 0
+        while led < @led_count 
           x = led.to_f / @led_count
 
           if @renderer
-            r, g, b = @renderer.call(x, t)
+            (r, g, b) = @renderer.call(t, x)
 
             if @strip
               color = Ws2812::Color.new((255 * r).to_i, (255 * g).to_i, (255 * b).to_i)
@@ -66,6 +69,7 @@ class Player
               Rails.logger.info "Rendering #{[r, g, b]}"
             end
           end
+          led += 1
         end
 
         @strip.show if @strip
@@ -74,6 +78,8 @@ class Player
 
         diff = (1.0 / @fps.to_f) - duration
         sleep(diff) if diff > 0
+
+        frame += 1
       end
     end until @stop_requested
 
@@ -83,14 +89,23 @@ class Player
 
   def play! render
     begin
-      App.logger.info "Evaling new renderer"
-      new_renderer = eval "Proc.new{|x,t|\n #{render} \n}"
+      App.logger.info "Evaling new renderer #{render}"
+      new_renderer = eval "Proc.new{|x,t| #{render} }"
+
       if new_renderer.is_a? Proc
-        @renderer = new_renderer
-        App.logger.info "New renderer set"
+        App.logger.info "Testing new renderer"
+        begin
+          new_renderer.call(0.0, 0.0)
+          new_renderer.call(1.0, 1.0)
+
+          @renderer = new_renderer
+          App.logger.info "New renderer set"
+        rescue Exception => e
+          App.logger.warn "Error testing new renderer #{e.message}"
+        end
       end
-    rescue
-      App.logger.warn "Error evaling new renderer"
+    rescue Exception => e
+      App.logger.warn "Error evaling new renderer #{e.message}"
     end
   end
 
