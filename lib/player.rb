@@ -4,6 +4,7 @@ require 'concurrent/async'
 
 class Player
   include Singleton
+  include Concurrent::Async
 
   def initialize
     super
