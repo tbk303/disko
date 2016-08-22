@@ -56,11 +56,11 @@ class Player
         t = frame.to_f / @fps
 
         led = 0
-        while led < @led_count 
+        while led < @led_count
           x = led.to_f / @led_count
 
           if @renderer
-            (r, g, b) = @renderer.call(t, x)
+            (r, g, b) = @renderer.call(x, t)
 
             if @strip
               color = Ws2812::Color.new((255 * r).to_i, (255 * g).to_i, (255 * b).to_i)

@@ -189,7 +189,7 @@
 
       if evaled?
         for i in [0..canvas.width] by 2
-          color = evaled(time, i/canvas.width)
+          color = evaled(i/canvas.width, time)
           style = 'rgb(' + (color[0] * 255.0).toFixed() + ',' + (color[1] * 255.0).toFixed() + ',' + (color[2] * 255.0).toFixed() + ')'
           context.fillStyle = style
           context.fillRect i, 0, 2, canvas.height
