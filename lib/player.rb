@@ -23,7 +23,7 @@ class Player
 
       begin
         App.logger.info "Initializing player with #{ENV['LED_COUNT']} leds on GPIO #{ENV['GPIO_PIN']}"
-        @strip = Ws2812::Basic.new(@led_count)
+        @strip = Ws2812::Basic.new(@led_count, ENV['GPIO_PIN'].to_i)
         @strip.open
         @strip.brightness = 255
       rescue Exception => e
@@ -83,9 +83,12 @@ class Player
 
   def play! render
     begin
+      App.logger.info "Evaling new renderer"
       new_renderer = eval "Proc.new{|x,t|\n #{render} \n}"
-      @renderer = new_renderer
-      App.logger.info "Playing new renderer"
+      if new_renderer.is_a? Proc
+        @renderer = new_renderer
+        App.logger.info "New renderer set"
+      end
     rescue
       App.logger.warn "Error evaling new renderer"
     end
