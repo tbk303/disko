@@ -47,9 +47,10 @@ class Player
 
     App.logger.info "Player running with target #{@fps} fps"
 
+    t = 0
+
     begin
       frame = 0
-      t = 0
 
       while frame < @fps
         start = Time.now
@@ -80,6 +81,8 @@ class Player
         sleep(diff) if diff > 0
 
         t += (1.0 / @fps) * @speed
+
+        t = 0.0 if t > 1.0
 
         frame += 1
       end
@@ -118,7 +121,7 @@ class Player
   end
 
   def speed! speed
-    App.logger "Setting new speed #{speed}"
+    App.logger.info "Setting new speed #{speed}"
 
     @speed = speed
   end

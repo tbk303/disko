@@ -53,12 +53,12 @@ class App < Sinatra::Base
     speedFactor = params[:speedFactor]
 
     validFloat = !!Float(speedFactor) rescue false
-    if !validFloat || validFloat < 0.0
+    if !validFloat || speedFactor.to_f < 0.0
       status 422
       return {error: 'invalid param: speedFactor'}.to_json
     end
 
-    $player.speed! speedFactor
+    $player.speed! speedFactor.to_f
 
     {message: 'ok'}.to_json
   end
