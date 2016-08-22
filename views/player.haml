@@ -37,6 +37,19 @@
         position: absolute
         left: 0
         top: 0
+    #tapper
+      width: 100px
+      height: 100px
+      border: 1px solid #999
+      background-color: #AAA
+      transition: background-color 100ms linear
+
+      &.beat
+        background-color: #F66
+        transition: background-color 0ms linear
+      &.tapped
+        background-color: #FFA
+        transition: background-color 0ms linear
 
 %body
 
@@ -57,7 +70,8 @@
             1.0
         .col-sm-3
           %button#faster.btn.btn-block +
-
+          %p#currentTempo
+          #tapper(onMouseDown="tap()")
   .row
     .col-sm-1
       %h2 PVW
@@ -93,6 +107,7 @@
 
     String::startsWith ?= (s) -> @slice(0, s.length) == s
     String::endsWith   ?= (s) -> s == '' or @slice(-s.length) == s
+
 
     mode = 'play'
 
@@ -195,6 +210,79 @@
         data: {speedFactor: speedFactor}
         method: 'PUT'
 
+    e = document.getElementById('tapper')
+    currentTempo = 120
+    state = 'display'
+    currentTapIdx = 0
+    maxTaps = 5
+    taps = new Array(maxTaps)
+    waitingForTapTimeoutId = null
+    currentBeatIntervalId = null
+
+    addCurrentBeatHighlight = ->
+      if state == 'display'
+        e.setAttribute 'class', 'beat'
+        setTimeout removeAllClasses, 10
+      else
+        if currentBeatIntervalId
+          clearInterval currentBeatIntervalId
+          currentBeatIntervalId = null
+      return
+
+    removeAllClasses = ->
+      e.setAttribute 'class', ''
+      return
+
+    tap = ->
+      if waitingForTapTimeoutId
+        clearTimeout waitingForTapTimeoutId
+        waitingForTapTimeoutId = null
+      e.setAttribute 'class', 'tapped'
+      state = 'tapping'
+      taps[currentTapIdx] = Date.now()
+      currentAvg = 0
+      divider = 0
+      i = currentTapIdx - 1
+      while i > currentTapIdx - maxTaps + 1
+        i0 = i
+        if i0 < 0
+          i0 += maxTaps
+        i1 = i0 + 1
+        if i1 == maxTaps
+          i1 = 0
+        if taps[i0] > 0
+          divider += 1
+          delta = taps[i1] - (taps[i0])
+          currentAvg += delta
+        --i
+      if divider > 0
+        currentAvg /= divider
+        currentTempo = 60000 / currentAvg
+        updateCurrentTempoDisplay()
+        setTimeout displayCurrentBeat, 3 * currentAvg
+      currentTapIdx = (currentTapIdx + 1) % maxTaps
+      setTimeout removeAllClasses, 10
+      return
+
+    resetTapData = ->
+      currentTapIdx = 0
+      i = 0
+      while i <= maxTaps
+        taps[i] = -1
+        ++i
+      return
+
+    displayCurrentBeat = ->
+      if !currentBeatIntervalId
+        state = 'display'
+        resetTapData()
+        currentBeatIntervalId = window.setInterval(addCurrentBeatHighlight, 60000 / currentTempo)
+      return
+
+    updateCurrentTempoDisplay = ->
+      document.getElementById('currentTempo').textContent = currentTempo.toFixed(2) + ' bpm'
+      return
+
     $ ->
       refreshPatterns()
 
@@ -231,4 +319,8 @@
 
       renderLoop(0)
       previewLoop(0)
+      resetTapData()
+      updateCurrentTempoDisplay()
+      displayCurrentBeat()
+
 
