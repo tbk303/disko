@@ -49,13 +49,13 @@ class Player
 
     begin
       frame = 0
+      t = 0
 
-      while frame < @fps 
+      while frame < @fps
         start = Time.now
 
-        t = frame.to_f / @fps
-
         led = 0
+
         while led < @led_count
           x = led.to_f / @led_count
 
@@ -78,6 +78,8 @@ class Player
 
         diff = (1.0 / @fps.to_f) - duration
         sleep(diff) if diff > 0
+
+        t += (1.0 / @fps) * @speed
 
         frame += 1
       end
