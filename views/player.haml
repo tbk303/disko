@@ -233,7 +233,7 @@
       e.setAttribute 'class', ''
       return
 
-    tap = ->
+    @window.tap = ->
       if waitingForTapTimeoutId
         clearTimeout waitingForTapTimeoutId
         waitingForTapTimeoutId = null
