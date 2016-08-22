@@ -1,5 +1,6 @@
 require 'singleton'
 require 'renderer'
+require 'concurrent/async'
 
 class Player
   include Singleton
@@ -13,7 +14,7 @@ class Player
     @running = false
     @strip = nil
 
-    @led_count = ENV['LED_COUNT']
+    @led_count = ENV['LED_COUNT'].to_i
 
     if @led_count.nil? || ENV['GPIO_PIN'].nil?
       App.logger.warn 'LED_COUNT and/or GPIO_PIN not set in environment, putting player in sandbox mode'
@@ -43,42 +44,40 @@ class Player
     @running = true
     @stop_requested = false
 
-    thread = Thread.new do
-      App.logger.info "Player running with target #{@fps} fps"
+    App.logger.info "Player running with target #{@fps} fps"
 
-      begin
-        (0...@fps).each do |frame|
-          start = Time.now
+    begin
+      (0...@fps).each do |frame|
+        start = Time.now
 
-          t = frame.to_f / @fps
+        t = frame.to_f / @fps
 
-          (0...@led_count).each do |led|
-            x = led.to_f / @led_count
+        (0...@led_count).each do |led|
+          x = led.to_f / @led_count
 
-            if @renderer
-              r, g, b = @renderer.call(x, t)
+          if @renderer
+            r, g, b = @renderer.call(x, t)
 
-              if @strip
-                color = Ws2812::Color.new((255 * r).to_i, (255 * g).to_i, (255 * b).to_i)
-                @strip[led] = color
-              else
-                Rails.logger.info "Rendering #{[r, g, b]}"
-              end
+            if @strip
+              color = Ws2812::Color.new((255 * r).to_i, (255 * g).to_i, (255 * b).to_i)
+              @strip[led] = color
+            else
+              Rails.logger.info "Rendering #{[r, g, b]}"
             end
           end
-
-          @strip.show if @strip
-
-          duration = Time.now - start
-
-          diff = (1.0 / @fps.to_f) - duration
-          sleep(diff) if diff > 0
         end
-      end until @stop_requested
 
-      @running = false
-      App.logger.info 'Player stopped'
-    end
+        @strip.show if @strip
+
+        duration = Time.now - start
+
+        diff = (1.0 / @fps.to_f) - duration
+        sleep(diff) if diff > 0
+      end
+    end until @stop_requested
+
+    @running = false
+    App.logger.info 'Player stopped'
   end
 
   def play! render
