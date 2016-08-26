@@ -70,8 +70,8 @@
             1.0
         .col-sm-3
           %button#faster.btn.btn-block +
-          %p#currentTempo
-          #tapper(onMouseDown="tap()")
+          -#%p#currentTempo
+          -##tapper(onMouseDown="tap()")
   .row
     .col-sm-1
       %h2 PVW
@@ -319,8 +319,8 @@
 
       renderLoop(0)
       previewLoop(0)
-      resetTapData()
-      updateCurrentTempoDisplay()
-      displayCurrentBeat()
+      #resetTapData()
+      #updateCurrentTempoDisplay()
+      #displayCurrentBeat()
 
 
