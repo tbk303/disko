@@ -6,7 +6,7 @@ GEM
       coffee-script-source
       execjs
     coffee-script-source (1.10.0)
-    concurrent-ruby (1.0.0)
+    concurrent-ruby (1.0.3)
     execjs (2.6.0)
     foreman (0.78.0)
       thor (~> 0.19.1)
@@ -46,5 +46,8 @@ DEPENDENCIES
   shotgun
   sinatra
 
+RUBY VERSION
+   ruby 2.3.1p112
+
 BUNDLED WITH
-   1.10.6
+   1.13.6
