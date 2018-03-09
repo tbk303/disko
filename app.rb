@@ -42,7 +42,18 @@ class App < Sinatra::Base
       return {error: 'missing required param: render'}.to_json
     end
 
+    speedFactor = params[:speedFactor]
+
+    validFloat = !!Float(speedFactor) rescue false
+    if !validFloat || speedFactor.to_f < 0.0
+      status 422
+      return {error: 'invalid param: speedFactor'}.to_json
+    end
+
+    colors = params[:colors]
+
     $player.play! renderer
+    $player.speed! speedFactor.to_f
 
     {message: 'ok'}.to_json
   end
