@@ -60,12 +60,13 @@
 
       button
         border: 1px solid #ccc
+        margin-bottom: 1rem
 
 %body
   #colors{style: 'display: none;'}
     .row
-      .col-sm-2
-        - [[148,0,211], [75,0,130], [0,0,255], [0,255,0]].each do |r,g,b|
+      - [[0,0,0], [255,255,255], [255,0,127], [148,0,211], [75,0,130], [0,0,255], [0, 127, 255], [0,255,255], [0,255,0], [255,255,0], [255,127,0], [255,0,0]].each do |r,g,b|
+        .col-sm-2
           %button.btn.btn-block.color{style: "background-color: rgb(#{r},#{g},#{b});", data: {color: "[#{r}, #{g}, #{b}]"}}
 
   .row
