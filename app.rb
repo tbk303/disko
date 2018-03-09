@@ -94,6 +94,14 @@ class App < Sinatra::Base
     {message: 'ok'}.to_json
   end
 
+  put '/stop' do
+    content_type 'application/json'
+
+    $player.stop!
+
+    {message: 'ok'}.to_json
+  end
+
   get '/patterns' do
     content_type 'application/json'
 
