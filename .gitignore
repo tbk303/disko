@@ -36,3 +36,4 @@ bower.json
 *.swp
 .sass-cache
 .env
+boot.log
